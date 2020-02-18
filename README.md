@@ -8,4 +8,6 @@ then run
 ```
 run.sh
 ```
-Upon completion, the benchmarks are stored in the `results` directory while the figures are in the `figures` directory.
+Upon completion, the benchmarks are stored in the `results` directory while EPS figures are in the `figures` directory.
+
+Note: the benchmark takes several (>10) minutes, and requires a workstation with at least 128 GB RAM.
