@@ -10,7 +10,7 @@ from numpy.fft import fft, ifft, fftshift, ifftshift, fft2, ifft2
 
 from scipy.special import jv as besselj
 
-import finufftpy
+import finufft
 
 def translations_brute_force(Shathat, Mhat, cmul_trans):
     # Shathat: (q, te, k)
@@ -198,14 +198,15 @@ def cartesian_to_pft(templates, T, pf_grid):
 
         # Need to force Fortran ordering because that's what the FINUFFT
         # interface expects.
-        gg = np.asfortranarray(template.transpose((1, 0)))
+        gg = np.asarray(template,dtype=np.complex128)
+        #gg = np.asfortranarray(template.transpose((1, 0)))
 
         isign = -1
         eps = 1e-6
 
         # Note: Crashes if gg is a 1D vector (raveled). Why?
-        finufftpy.nufft2d2(wx * dx, wy * dy, fcc,
-                           isign, eps, gg, upsampfac=upsampfac)
+        finufft.nufft2d2(wx * dx, wy * dy, gg,
+                           isign=isign, eps=eps, out=fcc, upsampfac=upsampfac)
         Shat[k, :] = fcc
 
     return Shat
@@ -228,8 +229,7 @@ def pft_to_cartesian(Shat, T, N, pf_grid):
 
     templates1 = np.zeros((n_templates, N, N))
 
-    # Again, Fortran ordering is necessary for FINUFFT.
-    gxx = np.empty((N, N), dtype=np.complex128, order='F')
+    gxx = np.empty((N, N), dtype=np.complex128)
 
     upsampfac = 1.25
 
@@ -239,8 +239,8 @@ def pft_to_cartesian(Shat, T, N, pf_grid):
         isign = 1
         eps = 1e-6
 
-        finufftpy.nufft2d1(wx * dx, wy * dy, fcc1, isign, eps, N, N, gxx,
-                           upsampfac=upsampfac)
+        finufft.nufft2d1(wx * dx, wy * dy, fcc1, (N,N), isign=isign, eps=eps,
+                         out=gxx,upsampfac=upsampfac)
 
         gxx = gxx*dx*dy/(4*np.pi**2)
 
@@ -478,25 +478,29 @@ def rotations_brute_force(fimages, Shat, n_gamma, pf_grid, Nfine):
 
     fx1 = quad_wts_sq * Shat_rot
 
+    fx1 = fx1.reshape((n_gamma * n_templates, ngridr*ngridp))  # for 2d1
+    
     T = 2
     dx = dy = T / N
 
-    templates_rot = np.empty((N, N, n_gamma, n_templates),
-                             dtype=np.complex128, order='F')
+    templates_rot = np.empty((n_gamma * n_templates, N, N),
+                             dtype=np.complex128)
 
     upsampfac = 1.25
     isign = 1
     eps = 1e-2
 
-    finufftpy.nufft2d1many(wx * dx, wy * dy, fx1, isign, eps, N, N,
-                           templates_rot, upsampfac=upsampfac)
+    finufft.nufft2d1(wx * dx, wy * dy, fx1, (N,N), isign=isign, eps=eps,
+                           out=templates_rot, upsampfac=upsampfac)
 
-    templates_rot = templates_rot / (4 * np.pi ** 2)
-    # templates_rot: (trx, try, γ, te)
-
-    templates_rot = templates_rot.transpose((3, 2, 1, 0)).copy()
-    # templates_rot: (te, γ, try, trx)
-
+    #print(templates_rot.shape)
+    templates_rot = templates_rot.reshape(n_templates, n_gamma,N,N) / (4 * np.pi ** 2)
+    # templates_rot: (trx, try, γ, te)  ###? no
+    
+    #templates_rot = templates_rot.transpose((3, 2, 1, 0)).copy()
+    templates_rot = templates_rot.transpose((0,1,3,2)).copy()
+    # templates_rot: (te, γ, try, trx)  
+    
     ftemplates_rot = fft2(ifftshift(templates_rot, axes=(-2, -1)))
     # ftemplates_rot: (te, γ, trky, trkx)
 
