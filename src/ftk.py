@@ -243,7 +243,7 @@ def pft_to_cartesian(Shat, T, N, pf_grid):
 
         gxx = gxx*dx*dy/(4*np.pi**2)
 
-        templates1[k, :, :] = np.real(gxx.transpose((1, 0)))
+        templates1[k, :, :] = np.real(gxx)
 
     return templates1
 
