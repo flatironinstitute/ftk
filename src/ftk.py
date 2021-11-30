@@ -196,10 +196,9 @@ def cartesian_to_pft(templates, T, pf_grid):
     for k in range(n_templates):
         template = templates[k, :, :]
 
-        # Need to force Fortran ordering because that's what the FINUFFT
+        # Need to force complex values because that's what the FINUFFT
         # interface expects.
-        gg = np.asarray(template,dtype=np.complex128)
-        #gg = np.asfortranarray(template.transpose((1, 0)))
+        gg = np.asarray(template, dtype=np.complex128)
 
         isign = -1
         eps = 1e-6
