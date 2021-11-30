@@ -477,29 +477,28 @@ def rotations_brute_force(fimages, Shat, n_gamma, pf_grid, Nfine):
 
     fx1 = quad_wts_sq * Shat_rot
 
-    fx1 = fx1.reshape((n_gamma * n_templates, ngridr*ngridp))  # for 2d1
-    
+    fx1 = fx1.reshape((n_templates * n_gamma, ngridr * ngridp))
+
     T = 2
     dx = dy = T / N
 
-    templates_rot = np.empty((n_gamma * n_templates, N, N),
+    templates_rot = np.empty((n_templates * n_gamma, N, N),
                              dtype=np.complex128)
 
     upsampfac = 1.25
     isign = 1
     eps = 1e-2
 
-    finufft.nufft2d1(wx * dx, wy * dy, fx1, (N,N), isign=isign, eps=eps,
+    finufft.nufft2d1(wx * dx, wy * dy, fx1, (N, N), isign=isign, eps=eps,
                            out=templates_rot, upsampfac=upsampfac)
 
-    #print(templates_rot.shape)
-    templates_rot = templates_rot.reshape(n_templates, n_gamma,N,N) / (4 * np.pi ** 2)
-    # templates_rot: (trx, try, γ, te)  ###? no
-    
-    #templates_rot = templates_rot.transpose((3, 2, 1, 0)).copy()
-    templates_rot = templates_rot.transpose((0,1,3,2)).copy()
-    # templates_rot: (te, γ, try, trx)  
-    
+    templates_rot = templates_rot.reshape(n_templates, n_gamma, N, N)
+    templates_rot = templates_rot / (4 * np.pi ** 2)
+    # templates_rot: (te, γ, trx, try)
+
+    templates_rot = templates_rot.transpose((0, 1, 3, 2)).copy()
+    # templates_rot: (te, γ, try, trx)
+
     ftemplates_rot = fft2(ifftshift(templates_rot, axes=(-2, -1)))
     # ftemplates_rot: (te, γ, trky, trkx)
 
